@@ -1,0 +1,297 @@
+<div>
+    <div class="mt-3">
+        <div class="card shadow-lg">
+            <div class="card-body">
+
+                
+                <div class="d-flex mb-3 align-items-center">
+                    <h3 class="flex-fill">Daftar Catatan Keuangan</h3>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTodoModal">
+                        Tambah Data
+                    </button>
+                </div>
+
+                
+                <div class="row mb-3 g-2 align-items-end">
+                    <div class="col-md-5">
+                        <input type="text" wire:model.live.debounce.300ms="search"
+                               class="form-control"
+                               placeholder="Cari berdasarkan judul atau deskripsi...">
+                    </div>
+                    <div class="col-md-3">
+                        <select wire:model.live="filterType" class="form-select">
+                            <option value="">Semua Tipe</option>
+                            <option value="income">Pemasukan</option>
+                            <option value="expense">Pengeluaran</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" wire:model.live="filterDate" class="form-control">
+                    </div>
+                    <div class="col-md-1">
+                        <select wire:model.live="perPage" class="form-select">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" wire:click="resetFilters" class="btn btn-secondary w-100 h-100">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                    </div>
+                </div>
+
+                
+                <?php echo $__env->make('components.cards.statistics', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+
+                <div class="row mb-4 g-3">
+                    <div class="col-md-8">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body p-4" wire:ignore>
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="card-title mb-0">Tren Keuangan</h5>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary active" id="viewTrendLine"
+                                            onclick="changeTrendChart('area')">
+                                            <i class="fas fa-chart-line"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" id="viewTrendBar"
+                                            onclick="changeTrendChart('bar')">
+                                            <i class="fas fa-chart-bar"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="chartTrend" style="height: 340px; background: #fff;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body p-4" wire:ignore>
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="card-title mb-0">Distribusi</h5>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="changeDistributionChart('donut'); return false;">Donut</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="changeDistributionChart('pie'); return false;">Pie</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div id="chartTransaction"
+                                    data-income="<?php echo e($totalIncome ?? 0); ?>"
+                                    data-expense="<?php echo e($totalExpense ?? 0); ?>"
+                                    data-chart="<?php echo e(json_encode($chartData ?? [])); ?>"
+                                    style="height: 340px; background: #fff;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Judul</th>
+                                <th>Tanggal</th>
+                                <th>Jumlah</th>
+                                <th>Tipe</th>
+                                <th>Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!--[if BLOCK]><![endif]--><?php $__empty_1 = true; $__currentLoopData = $transactions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $trx): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <tr>
+                                    <td><?php echo e(($transactions->firstItem() ?? 0) + $key); ?></td>
+                                    <td><?php echo e($trx->title); ?></td>
+                                    <td><?php echo e(date('d M Y', strtotime($trx->date))); ?></td>
+                                    <td>Rp <?php echo e(number_format($trx->amount, 0, ',', '.')); ?></td>
+                                    <td>
+                                        <!--[if BLOCK]><![endif]--><?php if($trx->type === 'income'): ?>
+                                            <span class="badge bg-success">Pemasukan</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-danger">Pengeluaran</span>
+                                        <?php endif; ?><!--[if ENDBLOCK]><![endif]-->
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <button wire:click="$dispatch('viewTransaction', [<?php echo e($trx->id); ?>])"
+                                            class="btn btn-sm btn-info text-white">
+                                            <i class="fas fa-eye"></i> Lihat
+                                        </button>
+
+                                        <button wire:click="$dispatch('editTransaction', [<?php echo e($trx->id); ?>])"
+                                            class="btn btn-sm btn-warning text-white">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+
+                                        <button wire:click="deleteTransaction(<?php echo e($trx->id); ?>)"
+                                            onclick="if(!confirm('Yakin ingin menghapus transaksi ini?')) { event.stopImmediatePropagation(); }"
+                                            class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> Hapus
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <tr><td colspan="6" class="text-center py-4">Belum ada data transaksi</td></tr>
+                            <?php endif; ?><!--[if ENDBLOCK]><![endif]-->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    <?php echo e($transactions->links()); ?>
+
+                </div>
+
+                
+                <?php
+$__split = function ($name, $params = []) {
+    return [$name, $params];
+};
+[$__name, $__params] = $__split('add-todo-modal');
+
+$__html = app('livewire')->mount($__name, $__params, 'lw-2610388048-0', $__slots ?? [], get_defined_vars());
+
+echo $__html;
+
+unset($__html);
+unset($__name);
+unset($__params);
+unset($__split);
+if (isset($__slots)) unset($__slots);
+?>
+                <?php
+$__split = function ($name, $params = []) {
+    return [$name, $params];
+};
+[$__name, $__params] = $__split('modals.edit-todo-modal');
+
+$__html = app('livewire')->mount($__name, $__params, 'lw-2610388048-1', $__slots ?? [], get_defined_vars());
+
+echo $__html;
+
+unset($__html);
+unset($__name);
+unset($__params);
+unset($__split);
+if (isset($__slots)) unset($__slots);
+?>
+                <?php
+$__split = function ($name, $params = []) {
+    return [$name, $params];
+};
+[$__name, $__params] = $__split('modals.view-todo-modal');
+
+$__html = app('livewire')->mount($__name, $__params, 'lw-2610388048-2', $__slots ?? [], get_defined_vars());
+
+echo $__html;
+
+unset($__html);
+unset($__name);
+unset($__params);
+unset($__split);
+if (isset($__slots)) unset($__slots);
+?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php $__env->startPush('scripts'); ?>
+<script>
+let trendChart = null;
+let distributionChart = null;
+
+function initCharts() {
+    try {
+        const trendEl = document.getElementById('chartTrend');
+        const distEl = document.getElementById('chartTransaction');
+        if (!trendEl || !distEl || typeof ApexCharts === 'undefined') return;
+
+        const income = parseInt(distEl.dataset.income || 0);
+        const expense = parseInt(distEl.dataset.expense || 0);
+        const chartData = JSON.parse(distEl.dataset.chart || '{}');
+
+        const trendOptions = {
+            series: [
+                { name: 'Pemasukan', data: chartData.incomeData || [] },
+                { name: 'Pengeluaran', data: chartData.expenseData || [] }
+            ],
+            chart: {
+                type: trendChart ? trendChart.opts.chart.type : 'area',
+                height: 340,
+                toolbar: { show: true },
+                background: '#fff'
+            },
+            colors: ['#28a745', '#dc3545'],
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: { categories: chartData.labels || [] },
+            yaxis: { labels: { formatter: v => 'Rp ' + v.toLocaleString('id-ID') } },
+        };
+
+        const distOptions = {
+            series: [income, expense],
+            chart: {
+                type: distributionChart ? distributionChart.opts.chart.type : 'donut',
+                height: 340
+            },
+            labels: ['Pemasukan', 'Pengeluaran'],
+            colors: ['#28a745', '#dc3545'],
+        };
+
+        if (trendChart) trendChart.updateOptions(trendOptions);
+        else { trendChart = new ApexCharts(trendEl, trendOptions); trendChart.render(); }
+
+        if (distributionChart) distributionChart.updateOptions(distOptions);
+        else { distributionChart = new ApexCharts(distEl, distOptions); distributionChart.render(); }
+
+    } catch (err) {
+        console.error('initCharts error:', err);
+    }
+}
+
+function changeTrendChart(type) {
+    if (!trendChart) return;
+    trendChart.updateOptions({ chart: { type } });
+    document.getElementById('viewTrendLine').classList.toggle('active', type === 'area');
+    document.getElementById('viewTrendBar').classList.toggle('active', type === 'bar');
+}
+
+function changeDistributionChart(type) {
+    if (!distributionChart) return;
+    distributionChart.updateOptions({ chart: { type } });
+}
+
+// Livewire Event Listeners
+if (typeof Livewire !== 'undefined') {
+
+    function refreshCharts() {
+        setTimeout(() => {
+            initCharts();
+        }, 100); // delay agar DOM livewire sudah ter-update
+    }
+
+    Livewire.on('transactionAdded', () => {
+        refreshCharts();
+        // tutup otomatis modal Add Todo
+        const addModal = bootstrap.Modal.getInstance(document.getElementById('addTodoModal'));
+        if (addModal) addModal.hide();
+    });
+
+    Livewire.on('transactionUpdated', refreshCharts);
+    Livewire.on('transactionDeleted', refreshCharts);
+    Livewire.on('refreshTransactionList', refreshCharts);
+
+    Livewire.hook('morph.updated', refreshCharts);
+}
+
+document.addEventListener('DOMContentLoaded', () => initCharts());
+</script>
+<?php $__env->stopPush(); ?>
+<?php /**PATH C:\Users\ASUS\OneDrive\Pictures\CatatanKeuangan\resources\views/livewire/home-livewire.blade.php ENDPATH**/ ?>
